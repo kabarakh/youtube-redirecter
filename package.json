@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "cookie-parser": "^1.4.1",
     "express": "^4.13.4",
     "lodash": "^4.0.0",
     "mongoose": "^4.3.6",
