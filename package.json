@@ -2,17 +2,19 @@
   "name": "youtube",
   "version": "1.0.0",
   "description": "",
-  "main": "server.js",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "cookie-parser": "^1.4.1",
-    "express": "^4.13.4",
-    "lodash": "^4.0.0",
-    "mongoose": "^4.3.6",
-    "q": "^1.4.1"
+    "cookie-parser": "^1.4.3",
+    "express": "^4.16.4",
+    "lodash": "^4.17.11",
+    "mongoose": "^5.3.14",
+    "nodemon": "^1.18.7",
+    "q": "^1.5.1",
+    "yargs": "^12.0.5"
   }
 }

@@ -1,10 +1,7 @@
 (function () {
     var mongoose = require('mongoose'),
         url = require('url'),
-        dbConfig = require('./config').db,
-        q = require('q');
-
-    mongoose.Promise = require('q').Promise;
+        dbConfig = require('./config').db;
 
     var urlObject = {
         protocol: 'mongodb',
@@ -19,16 +16,10 @@
 
     console.log('connecting to db ' + mongoUrl);
 
-    var deferred = q.defer();
-
-    mongoose.connect(mongoUrl, function (error) {
-        if (error) {
-            deferred.reject('db connection failed');
-        } else {
-            deferred.resolve();
-        }
+    var promise = mongoose.connect(mongoUrl, {
+        useNewUrlParser: true
     });
 
-    module.exports = deferred.promise;
+    module.exports = promise;
 
 })();
