@@ -1,45 +1,109 @@
-var yargs = require('yargs');
+var config = require('./Bootstrapping/config');
+var commander = require('commander');
 var Webserver = require('./Webserver/Webserver');
 var CliInterface = require('./Cli/CliInterface');
+var dbConnectionPromise = require('./Bootstrapping/DatabaseConnection');
+var Logger = require('./Utility/Logger');
+var _ = require('lodash');
+var cliFormat = require('cli-format');
 
-var initializeCommands = function () {
-  yargs.usage(
-      '$0 <cmd> [args]')
-    .command('route:add <localRoute> <remoteUrl>',
-      'Add a route to redirect',
-      function (yargs) {
-        yargs.positional('localRoute', {
-            type: 'string',
-            describe: 'the local route, e.g. /pls/bl2'
-          }),
-          yargs.positional('remoteUrl', {
-            type: 'string',
-            describe: 'the remote url, e.g. https://www.youtube.com/watch?v=ok2NiHhyjDI&list=PLamysY4y7pDBNCV6TcPzCXWQkV_nipgZd'
-          })
-      },
-      function (argv) {
-        // todo: build this
-        CliInterface.addRoute(argv.localRoute, argv.remoteUrl);
-      })
-    .command(
-      'webserver:start',
-      'Start the redirect webserver',
-      function () {},
-      function () {
-        Webserver.startWebserver();
-      })
-    .help()
-    .argv
-};
+var initializeCommand = function () {
+    var commandRan = false;
+    commander
+        .version('0.8.15');
 
+    commander
+        .command('webserver:start')
+        .description('Start the redirect webserver')
+        .action(function () {
+            commandRan = true;
 
-var dbConnectionPromise = require('./Boostrapping/DatabaseConnection');
+            Webserver.startWebserver();
+        });
+
+    commander
+        .command('routes:list')
+        .action(function () {
+            commandRan = true;
+
+            CliInterface
+                .listRoutes()
+                .then(function (routesList) {
+                    if (!routesList) {
+                        Logger.info('No routes found');
+                    } else {
+                        Logger.cliOutput('Available routes:');
+
+                        Logger.cliOutput(
+                            cliFormat.columns.wrap(
+                                [
+                                    'sourcePath',
+                                    'targetUrl'
+                                ], {
+                                    width: 80,
+                                    paddingMiddle: ' | '
+                                })
+                        );
+
+                        _.forEach(routesList, function (singleRoute) {
+                            Logger.cliOutput(
+                                cliFormat.columns.wrap(
+                                    [
+                                        singleRoute.sourceUrl.join('/'),
+                                        singleRoute.targetUrl
+                                    ], {
+                                        width: 80,
+                                        paddingMiddle: ' | '
+                                    })
+                            );
+                        });
+                    }
+                    return;
+                }).then(function () {
+                    Logger.debug('Exiting cli');
+                    process.exit(0);
+                }).catch(Logger.error);
+
+        });
+
+    commander
+        .command('routes:add <localRoute> <remoteUrl>')
+        .action(function (localRoute, remoteUrl) {
+            commandRan = true;
+
+            CliInterface
+                .addRoute(localRoute, remoteUrl)
+                .then(function () {
+                    Logger.debug('Exiting cli');
+                    process.exit(0);
+                });
+        });
+
+    commander
+        .command('routes:delete <localRoute>')
+        .action(function (localRoute) {
+            commandRan = true;
+
+            CliInterface
+                .deleteRoute(localRoute)
+                .then(function () {
+                    Logger.debug('Exiting cli');
+                    process.exit(0);
+                });
+        });
+
+    commander.parse(process.argv);
+
+    if (!commandRan) {
+        commander.outputHelp();
+        process.exit(0);
+    }
+}
+
 dbConnectionPromise.then(function () {
-  console.log('connected to database');
-  initializeCommands();
+    Logger.debug('Exiting cli');
+    initializeCommand();
 }).catch(function (data) {
-  console.log(data);
-  process.exit(1);
+    Logger.error(data);
+    process.exit(1);
 });
-
-

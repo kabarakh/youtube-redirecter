@@ -1,7 +1,8 @@
 (function () {
     var mongoose = require('mongoose'),
         url = require('url'),
-        dbConfig = require('./config').db;
+        dbConfig = require('./config').db,
+        Logger = require('../Utility/Logger');
 
     var urlObject = {
         protocol: 'mongodb',
@@ -14,7 +15,7 @@
 
     var mongoUrl = url.format(urlObject);
 
-    console.log('connecting to db ' + mongoUrl);
+    Logger.debug('connecting to db ' + mongoUrl);
 
     var promise = mongoose.connect(mongoUrl, {
         useNewUrlParser: true

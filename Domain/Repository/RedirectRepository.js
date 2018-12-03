@@ -1,16 +1,21 @@
 (function () {
     var mongoose = require('mongoose'),
         q = require('q'),
-        Redirect = require('../Model/Redirect');
+        Redirect = require('../Model/Redirect'),
+        Logger = require('../../Utility/Logger');
 
     module.exports = {
+
+        findOneByUrlPartsNotRecursive: function(urlParts) {
+            return Redirect.findOne({sourceUrl: urlParts});
+        },
 
         findOneByUrlParts: function (urlParts) {
 
             var resolveMongooseCall = function (urlParts, deferred) {
-                console.log('trying repo findOneByUrlParts with ', urlParts.toString());
+                Logger.debug('trying repo findOneByUrlParts with ', urlParts.toString());
 
-                Redirect.findOne({SourceUrl: urlParts}, function (error, redirect) {
+                Redirect.findOne({sourceUrl: urlParts}, function (error, redirect) {
 
                     if (error) {
                         deferred.reject(error.toString());
