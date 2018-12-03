@@ -5,7 +5,7 @@ var CliInterface = require('./Cli/CliInterface');
 var dbConnectionPromise = require('./Bootstrapping/DatabaseConnection');
 var Logger = require('./Utility/Logger');
 var _ = require('lodash');
-var cliFormat = require('cli-format');
+var Table = require('easy-table')
 
 var initializeCommand = function () {
     var commandRan = false;
@@ -29,34 +29,22 @@ var initializeCommand = function () {
             CliInterface
                 .listRoutes()
                 .then(function (routesList) {
-                    if (!routesList) {
-                        Logger.info('No routes found');
+                    if (!routesList.length) {
+                        Logger.cliOutput('');
+                        Logger.cliOutput('No routes found');
                     } else {
+                        Logger.cliOutput('');
                         Logger.cliOutput('Available routes:');
+                        Logger.cliOutput('');
 
-                        Logger.cliOutput(
-                            cliFormat.columns.wrap(
-                                [
-                                    'sourcePath',
-                                    'targetUrl'
-                                ], {
-                                    width: 80,
-                                    paddingMiddle: ' | '
-                                })
-                        );
+                        var outputTable = new Table();
 
                         _.forEach(routesList, function (singleRoute) {
-                            Logger.cliOutput(
-                                cliFormat.columns.wrap(
-                                    [
-                                        singleRoute.sourceUrl.join('/'),
-                                        singleRoute.targetUrl
-                                    ], {
-                                        width: 80,
-                                        paddingMiddle: ' | '
-                                    })
-                            );
+                            outputTable.cell('Source URL', singleRoute.sourceUrl.join('/'))
+                            outputTable.cell('Target URL', singleRoute.targetUrl)
+                            outputTable.newRow();
                         });
+                        Logger.cliOutput(outputTable.toString());
                     }
                     return;
                 }).then(function () {
