@@ -1,21 +1,25 @@
-var config = require('./Bootstrapping/config');
-var commander = require('commander');
-var Webserver = require('./Webserver/Webserver');
-var CliInterface = require('./Cli/CliInterface');
-var dbConnectionPromise = require('./Bootstrapping/DatabaseConnection');
-var Logger = require('./Utility/Logger');
-var _ = require('lodash');
-var Table = require('easy-table')
+import commander = require('commander');
+import Table from 'easy-table';
+import * as _ from 'lodash';
 
-var initializeCommand = function () {
-    var commandRan = false;
+import Configfrom from './Bootstrapping/Config';
+import DatabaseConnection from './Bootstrapping/DatabaseConnection';
+import CliInterface from './Cli/CliInterface';
+import { RedirectInterface } from './Domain/Model/Redirect';
+import Logger from './Utility/Logger';
+import Webserver from './Webserver/Webserver';
+
+const dbConnectionPromise = DatabaseConnection.connect();
+
+const initializeCommand = () => {
+    let commandRan = false;
     commander
         .version('0.8.15');
 
     commander
         .command('webserver:start')
         .description('Start the redirect webserver')
-        .action(function () {
+        .action(() => {
             commandRan = true;
 
             Webserver.startWebserver();
@@ -23,12 +27,12 @@ var initializeCommand = function () {
 
     commander
         .command('routes:list')
-        .action(function () {
+        .action(() => {
             commandRan = true;
 
             CliInterface
                 .listRoutes()
-                .then(function (routesList) {
+                .then((routesList: RedirectInterface[]) => {
                     if (!routesList.length) {
                         Logger.cliOutput('');
                         Logger.cliOutput('No routes found');
@@ -37,17 +41,17 @@ var initializeCommand = function () {
                         Logger.cliOutput('Available routes:');
                         Logger.cliOutput('');
 
-                        var outputTable = new Table();
+                        const outputTable = new Table();
 
-                        _.forEach(routesList, function (singleRoute) {
-                            outputTable.cell('Source URL', singleRoute.sourceUrl.join('/'))
-                            outputTable.cell('Target URL', singleRoute.targetUrl)
+                        _.forEach(routesList, (singleRoute) => {
+                            outputTable.cell('Source URL', singleRoute.sourceUrl.join('/'));
+                            outputTable.cell('Target URL', singleRoute.targetUrl);
                             outputTable.newRow();
                         });
                         Logger.cliOutput(outputTable.toString());
                     }
                     return;
-                }).then(function () {
+                }).then(() => {
                     Logger.debug('Exiting cli');
                     process.exit(0);
                 }).catch(Logger.error);
@@ -56,12 +60,12 @@ var initializeCommand = function () {
 
     commander
         .command('routes:add <localRoute> <remoteUrl>')
-        .action(function (localRoute, remoteUrl) {
+        .action((localRoute: string, remoteUrl: string) => {
             commandRan = true;
 
             CliInterface
                 .addRoute(localRoute, remoteUrl)
-                .then(function () {
+                .then(() => {
                     Logger.debug('Exiting cli');
                     process.exit(0);
                 });
@@ -69,12 +73,12 @@ var initializeCommand = function () {
 
     commander
         .command('routes:delete <localRoute>')
-        .action(function (localRoute) {
+        .action((localRoute: string) => {
             commandRan = true;
 
             CliInterface
                 .deleteRoute(localRoute)
-                .then(function () {
+                .then(() => {
                     Logger.debug('Exiting cli');
                     process.exit(0);
                 });
@@ -88,10 +92,10 @@ var initializeCommand = function () {
     }
 }
 
-dbConnectionPromise.then(function () {
+dbConnectionPromise.then(() => {
     Logger.debug('Exiting cli');
     initializeCommand();
-}).catch(function (data) {
+}).catch((data: any) => {
     Logger.error(data);
     process.exit(1);
 });
