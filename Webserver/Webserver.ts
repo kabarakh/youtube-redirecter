@@ -1,8 +1,9 @@
 import express from 'express';
 
 import Config, {ConfigObject} from '../Bootstrapping/Config';
-import Logger from '../Utility/Logger';
+import LogEntry, {LogEntryConstants, LogEntryInterface} from '../Domain/Model/LogEntry';
 import RedirectRepository from '../Domain/Repository/RedirectRepository';
+import Logger from '../Utility/Logger';
 
 class Webserver {
     protected app: express.Application;
@@ -14,11 +15,14 @@ class Webserver {
     }
 
     public startWebserver = () => {
-        // todo: save referrer, input url and resulting url
         this.registerFaviconRoute();
         this.registerRobotsTxtRoute();
 
         this.app.get('*', (request, response) => {
+            const logEntry = {
+                triedUrl: request.url,
+                referrer: request.get('Referrer'),
+            } as LogEntryInterface;
 
             Logger.debug(request.url);
             const urlSegments = request.url.split('/');
@@ -28,9 +32,19 @@ class Webserver {
 
             RedirectRepository.findOneByUrlParts(urlSegments).then((data) => {
                 Logger.info(`found targetUrl ${data.targetUrl} for ${request.url}, redirecting user`);
+                logEntry.status = LogEntryConstants.STATUS_NOT_FOUND;
+                logEntry.result = data.targetUrl;
+
+                LogEntry.create(logEntry);
+
                 response.redirect(data.targetUrl);
             }, (reason: any) => {
                 Logger.info('failure with url', request.url, ':', reason.toString());
+                logEntry.status = LogEntryConstants.STATUS_NOT_FOUND;
+                logEntry.result = Config.channelUrl;
+
+                LogEntry.create(logEntry);
+
                 this.redirectToChannelUrl(response);
             });
 

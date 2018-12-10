@@ -1,3 +1,4 @@
+import LogEntry from '../Domain/Model/LogEntry';
 import Redirect, { RedirectInterface } from '../Domain/Model/Redirect';
 import RedirectRepository from '../Domain/Repository/RedirectRepository';
 import Logger from '../Utility/Logger';
@@ -49,6 +50,14 @@ class CliInterface {
     public listRoutes = () => {
         return Redirect
             .find()
+            .exec();
+    }
+
+    public listLogEntries = (limit = 0) => {
+        return LogEntry
+            .find()
+            .sort({date: 'desc'})
+            .limit(limit)
             .exec();
     }
 
