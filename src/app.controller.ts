@@ -1,17 +1,14 @@
-import { Controller, Get, Response, Logger, Request } from '@nestjs/common';
-import {
-  Response as ExpressResponse,
-  Request as ExpressRequest,
-} from 'express';
+import { Controller, Get, Res, Req } from '@nestjs/common';
+import { FastifyReply, FastifyRequest } from 'fastify';
+import { ClientRequest, ServerResponse } from 'http';
 
 @Controller()
 export class AppController {
   @Get()
   goToChannel(
-    @Response() response: ExpressResponse,
-    @Request() request: ExpressRequest,
+    @Res() response: FastifyReply<ServerResponse>,
+    @Req() request: FastifyRequest<ClientRequest>,
   ) {
-    Logger.log(request.url);
     response.redirect(301, 'https://www.youtube.com/user/kabarakh/');
   }
 }

@@ -1,41 +1,26 @@
-import {
-  Controller,
-  Get,
-  Response,
-  Logger,
-  Param,
-  Request,
-} from '@nestjs/common';
-import {
-  Response as ExpressResponse,
-  Request as ExpressRequest,
-} from 'express';
+import { Controller, Get, Res, Param, Req, Logger } from '@nestjs/common';
+import { FastifyReply, FastifyRequest } from 'fastify';
+import * as FastifyUrlData from 'fastify-url-data';
+import { ClientRequest, ServerResponse } from 'http';
 import { RedirectService } from './redirect.service';
-import { throws } from 'assert';
 
 @Controller('pl')
 export class PlaylistController {
   constructor(private readonly redirectService: RedirectService) {}
 
   @Get()
-  goToPlaylists(@Response() response: ExpressResponse) {
+  goToPlaylists(@Res() response: FastifyReply<ServerResponse>) {
     response.redirect(301, 'https://www.youtube.com/user/kabarakh/playlists/');
   }
 
-  @Get('/:shortcut')
-  async goToPlaylist(
-    @Request() request: ExpressRequest,
-    @Param('shortcut') shortcut: string,
-  ) {
-    const targetRedirect = await this.redirectService.findBySourceUrl(
-      request.url,
+  @Get('*')
+  async goToPlaylist(@Req() request: FastifyRequest<ClientRequest>) {
+    Logger.log(request.urlData().path);
+    const targetRedirect = await this.redirectService.findBySourceUrlRecursively(
+      request.urlData().path,
     );
-    if (targetRedirect) {
-      return `Redirecting from ${request.url} to ${
-        targetRedirect.targetUrl
-      } - parameter ${shortcut}`;
-    } else {
-      this.goToPlaylist(request, shortcut.replace(/(.+)(\/[^\/]+)/, '$1'));
-    }
+    return `Redirecting from ${request.urlData().path} to ${
+      targetRedirect.targetUrl
+    }`;
   }
 }

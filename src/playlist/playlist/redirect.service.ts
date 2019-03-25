@@ -11,8 +11,22 @@ export class RedirectService {
     private readonly redirectRepository: Repository<Redirect>,
   ) {}
 
-  async findBySourceUrl(url: string): Promise<Redirect> {
-    return await this.redirectRepository.findOne({ sourceUrl: url });
+  async findBySourceUrlRecursively(url: string): Promise<Redirect> {
+    if (url === '') {
+      return Promise.resolve({
+        id: '12212',
+        sourceUrl: '',
+        targetUrl: 'https://youtube.com/kabarakh',
+      });
+    }
+    const redirect: Redirect = await this.redirectRepository.findOne({
+      sourceUrl: url,
+    });
+    if (!redirect) {
+      return await this.findBySourceUrlRecursively(
+        url.replace(/(.*)(\/[^\/]+)$/, ''),
+      );
+    }
   }
 
   async loadAll(): Promise<Redirect[]> {
