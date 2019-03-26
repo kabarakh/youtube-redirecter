@@ -1,4 +1,4 @@
-import { HttpService, Injectable, Logger } from '@nestjs/common';
+import { HttpService, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AxiosResponse } from 'axios';
 import { FastifyReply } from 'fastify';
@@ -57,13 +57,19 @@ export class RedirectService {
      * @returns {void}
      */
     redirectBySourceUrl(url: string, response: FastifyReply<ServerResponse>): void {
-        const redirect = this.findBySourceUrlRecursively(url);
+        const redirectPromise = this.findBySourceUrlRecursively(url);
         response.headers({
             'Cache-Control': 'max-age=0, no-cache, no-store, must-revalidate',
             Pragma: 'no-cache',
             Expires: 'Sun, 08 Mar 1987 19:00:00 GMT',
         });
-        response.redirect(301, 'https://youtube.com/');
+        redirectPromise
+            .then((redirect: Redirect) => {
+                return this.generateYoutubeUrl(redirect);
+            })
+            .then((redirectUrl: string) => {
+                response.redirect(301, redirectUrl);
+            });
     }
 
     /**
@@ -73,28 +79,37 @@ export class RedirectService {
      * @returns {void}
      */
     redirectBySourceUrlAndVideoIndex(url: string, videoIndex: number, response: FastifyReply<ServerResponse>): void {
-        const redirect = this.findBySourceUrlRecursively(url);
+        const redirectPromise = this.findBySourceUrlRecursively(url);
         response.headers({
             'Cache-Control': 'max-age=0, no-cache, no-store, must-revalidate',
             Pragma: 'no-cache',
             Expires: 'Sun, 08 Mar 1987 19:00:00 GMT',
         });
 
-        this.generateYoutubeUrl(redirect, videoIndex).then((targetUrl: string) => {
-            Logger.log('targetUrl', targetUrl);
-            response.redirect(301, targetUrl);
-        });
+        redirectPromise
+            .then((redirect: Redirect) => {
+                return this.generateYoutubeUrl(redirect, videoIndex);
+            })
+            .then((redirectUrl: string) => {
+                response.redirect(301, redirectUrl);
+            });
     }
 
     /**
      * @protected
      * @param {Redirect} redirect
      * @param {number} [videoIndex=-1]
-     * @returns {string}
+     * @returns {Promise<string>}
      */
     protected async generateYoutubeUrl(redirect: Redirect, videoIndex: number = 0): Promise<string> {
+        if (redirect.targetPlaylistId === '##channel##') {
+            return 'https://www.youtube.com/users/kabarakh';
+        } else if (redirect.targetPlaylistId === '##playlists##') {
+            return 'https://www.youtube.com/user/kabarakh/playlists';
+        }
+
         if (videoIndex > 0) {
-            let videoId = await this.getVideoId(redirect.targetPlaylistId, videoIndex);
+            const videoId = await this.getVideoId(redirect.targetPlaylistId, videoIndex);
             return `https://www.youtube.com/watch?v=${videoId}&list=${redirect.targetPlaylistId}`;
         } else {
             return Promise.resolve(`https://www.youtube.com/playlist?list=${redirect.targetPlaylistId}`);
@@ -105,16 +120,11 @@ export class RedirectService {
      * @protected
      * @param {string} playlistId
      * @param {number} videoIndex
-     * @returns {string}
+     * @returns {Promise<string>}
      */
     protected async getVideoId(playlistId: string, videoIndex: number): Promise<string> {
-        Logger.log(playlistId, '' + videoIndex);
         let totalEntries = 0;
         videoIndex = videoIndex - 1;
-
-        Logger.log(
-            `ajax call https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=50&key=${apiKey}`,
-        );
 
         let youtubePlaylistDataResponse: AxiosResponse<YoutubeResult> = await this.httpService
             .get(
@@ -122,14 +132,9 @@ export class RedirectService {
             )
             .toPromise();
 
-        let youtubePlaylistData = youtubePlaylistDataResponse.data;
+        const youtubePlaylistData = youtubePlaylistDataResponse.data;
         totalEntries = youtubePlaylistData.pageInfo.totalResults;
         while (youtubePlaylistData.items.length < totalEntries) {
-            Logger.log(
-                `ajax call https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=50&pageToken=${
-                    youtubePlaylistData.nextPageToken
-                }&key=${apiKey}`,
-            );
             youtubePlaylistDataResponse = await this.httpService
                 .get(
                     `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=50&pageToken=${
@@ -141,8 +146,6 @@ export class RedirectService {
             youtubePlaylistData.items = youtubePlaylistData.items.concat(youtubePlaylistDataResponse.data.items);
             youtubePlaylistData.nextPageToken = youtubePlaylistDataResponse.data.nextPageToken;
         }
-
-        Logger.log(youtubePlaylistData.items.length);
 
         if (videoIndex <= youtubePlaylistData.items.length) {
             return youtubePlaylistData.items.slice(videoIndex, videoIndex + 1).pop().snippet.resourceId.videoId;
