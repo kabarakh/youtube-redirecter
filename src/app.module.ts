@@ -4,10 +4,9 @@ import { AppController } from './app.controller';
 import { PlaylistModule } from './playlist/playlist.module';
 import { AdministrationModule } from './administration/administration.module';
 
-
 @Module({
-  imports: [PlaylistModule, TypeOrmModule.forRoot(), AdministrationModule],
-  controllers: [AppController],
-  providers: [],
+    imports: [PlaylistModule, TypeOrmModule.forRoot()],
+    controllers: [AppController],
+    providers: [],
 })
 export class AppModule {}
