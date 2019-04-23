@@ -4,7 +4,9 @@ import { AppModule } from './app.module';
 import * as Fastify from 'fastify';
 import * as fastifyUrlData from 'fastify-url-data';
 
-const fastify = Fastify({});
+const fastify = Fastify({
+    ignoreTrailingSlash: true,
+});
 
 fastify.register(fastifyUrlData);
 

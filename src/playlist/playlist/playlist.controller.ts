@@ -38,6 +38,6 @@ export class PlaylistController {
         @Param('videoNumber') videoNumber: number,
         @Res() response: FastifyReply<ServerResponse>,
     ) {
-        this.redirectService.redirectBySourceUrlAndVideoIndex(`/pl/${identifier}`, videoNumber, response);
+        this.redirectService.redirectBySourceUrlAndVideoIndex(`pl/${identifier}`, videoNumber, response);
     }
 }

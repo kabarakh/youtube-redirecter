@@ -103,7 +103,7 @@ export class RedirectService {
      */
     protected async generateYoutubeUrl(redirect: Redirect, videoIndex: number = 0): Promise<string> {
         if (redirect.targetPlaylistId === '##channel##') {
-            return 'https://www.youtube.com/users/kabarakh';
+            return 'https://www.youtube.com/user/kabarakh';
         } else if (redirect.targetPlaylistId === '##playlists##') {
             return 'https://www.youtube.com/user/kabarakh/playlists';
         }
@@ -134,7 +134,7 @@ export class RedirectService {
 
         const youtubePlaylistData = youtubePlaylistDataResponse.data;
         totalEntries = youtubePlaylistData.pageInfo.totalResults;
-        while (youtubePlaylistData.items.length < totalEntries) {
+        while (videoIndex > youtubePlaylistData.items.length && youtubePlaylistData.items.length < totalEntries) {
             youtubePlaylistDataResponse = await this.httpService
                 .get(
                     `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=50&pageToken=${
